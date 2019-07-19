@@ -43,6 +43,8 @@ open import Data.Unit hiding (_≤_)
 open import Data.Sum hiding (map) renaming (inj₁ to left ; inj₂ to right)
 --Among other things: decidability (Dec).
 open import Relation.Nullary hiding (¬_)
+open import Data.Empty using (⊥)
+
 is-zero : Nat → Bool
 is-zero zero = true
 is-zero (suc n) = false
@@ -71,15 +73,16 @@ example-list = 1 :: 2 :: 3 :: []
 
 -- Write a function that calculates the length of a given list:
 length : {A : Set} → List A → Nat
-length xs = {!!}
+length [] = 0
+length (x :: xs) = suc (length xs)
 
 -- Here are some tests for the 'length' function. If your implementation is correct,
 -- you should be able to fill in 'refl':
 length-test₁ : length {A = Nat} [] ≡ 0
-length-test₁ = {!!}
+length-test₁ = refl
 
 length-test₂ : length example-list ≡ 3
-length-test₂ = {!!}
+length-test₂ = refl
 
 -- Basic operations on lists include taking the head and the tail of the list.
 -- First, try to explain why we cannot define a head function of type
@@ -97,55 +100,63 @@ data Maybe (A : Set) : Set where
 --     You are always allowed to use this feature, and always recommended to be skeptical
 --     about its output.
 head : {A : Set} → List A → Maybe A
-head xs = {!!}
+head [] = nothing
+head (x :: xs) = just x
 
 tail : {A : Set} → List A → Maybe (List A)
-tail xs = {!!}
+tail [] = nothing
+tail (x :: xs) = just xs
 
 -- Write a function to append two lists together:
 _++_ : {A : Set} → List A → List A → List A
-xs ++ ys = {!!}
+[] ++ ys = ys
+(x :: xs) ++ ys = x :: (xs ++ ys)
 
 ++-test₁ : example-list ++ [] ≡ example-list
-++-test₁ = {!!}
+++-test₁ = refl
 
 ++-test₂ : (1 :: []) ++ (2 :: 3 :: []) ≡ example-list
-++-test₂ = {!!}
+++-test₂ = refl
 
 -- Prove that the length of the concatenation of two lists is the sum of the
 -- lengths of the two lists:
 ++-length : {A : Set} (xs ys : List A) → length (xs ++ ys) ≡ length xs + length ys
-++-length xs ys = {!!}
+++-length [] ys = refl
+++-length (x :: xs) ys = cong suc (++-length xs ys)
 
 -- map should apply a function to every element in a list
 map : {A B : Set} → (A → B) → List A → List B
-map f xs = {!!}
+map f [] = []
+map f (x :: xs) = (f x) :: (map f xs)
 
 map-test : map suc example-list ≡ 2 :: 3 :: 4 :: []
-map-test = {!!}
+map-test = refl
 
 double-all : List Nat → List Nat
 double-all xs = map (λ x → x + x) xs
 -- lambda expressions can be used to define in-line functions
 
 double-all-test : double-all example-list ≡ 2 :: 4 :: 6 :: []
-double-all-test = {!!}
+double-all-test = refl
 
 -- prove that mapping a function over a list preserves its length
 map-length : {A B : Set} (f : A → B) (xs : List A) → length (map f xs) ≡ length xs
-map-length f xs = {!!}
+map-length f [] = refl
+map-length f (x :: xs) = cong suc (map-length f xs)
 
 
 -- Next, let's implement a lookup operator: given a list and a number n,
 -- select the n'th element from this list.
 lookup : {A : Set} → List A → Nat → Maybe A
-lookup xs n = {!!}
+lookup [] _       = nothing
+lookup (x :: xs) zero = just x
+lookup (x :: xs) (suc n) = lookup xs n
 
 lookup-test₁ : lookup example-list 1 ≡ just 2
-lookup-test₁ = {!!}
+lookup-test₁ = refl
 
 lookup-test₂ : lookup example-list 5 ≡ nothing
-lookup-test₂ = {!!}
+lookup-test₂ = refl
 
 
 
@@ -180,14 +191,15 @@ example-vec = 1 :: 2 :: 3 :: []
 -- Instead, we only allow these functions to be called on a vector of length at
 -- least one (i.e. a vector of type 'Vec A (suc n)' for some n : Nat).
 head-Vec : {A : Set} {n : Nat} → Vec A (suc n) → A
-head-Vec {A} {n} xs = {!!}
+head-Vec {A} {n} (x :: xs) = x
 
 tail-Vec : {A : Set} {n : Nat} → Vec A (suc n) → Vec A n
-tail-Vec {A} {n} xs = {!!}
+tail-Vec {A} {n} (x :: xs) = xs
 
 -- Create a vector of length n containing only the number 0:
 zero-vec : (n : Nat) → Vec Nat n
-zero-vec n = {!!}
+zero-vec zero = []
+zero-vec (suc n) = 0 :: (zero-vec n)
 
 -- Other functions on lists, such as _++_ and map, can also be written for vectors but
 -- now the types describe their effect on the length of the vector.
@@ -196,18 +208,21 @@ zero-vec n = {!!}
 
 -- Remark that in Agda, we can overload constructor names but not function names.
 _++Vec_ : {A : Set} {m n : Nat} → Vec A m → Vec A n → Vec A (m + n)
-xs ++Vec ys = {!!}
+[] ++Vec ys = ys
+(x :: xs) ++Vec ys = x :: (xs ++Vec ys)
 
 map-Vec : {A B : Set} {n : Nat} → (A → B) → Vec A n → Vec B n
-map-Vec {A}{B}{n} f xs = {!!}
+map-Vec {A} {B} {.0} f [] = []
+map-Vec {A} {B} {.(suc _)} f (x :: xs) = f x :: map-Vec f xs
 
 -- It is also possible to enforce that two input vectors have the same length.
 -- For example, we can calculate the dot product (as in physics) of two vectors (unicode \cdot):
 _·_ : {n : Nat} → Vec Nat n → Vec Nat n → Nat
-xs · ys = {!!}
+[] · [] = 0
+(x :: xs) · (y :: ys) = x * y + (xs · ys)
 
 ·-test : example-vec · map-Vec suc example-vec ≡ 20
-·-test = {!!}
+·-test = refl
 
 -- In order to implement a lookup function on vectors, we first need to
 -- introduce the Fin type: this is the type of natural numbers up to a given
@@ -229,25 +244,27 @@ two-Fin3 : Fin 3
 two-Fin3 = suc (suc zero)
 
 -- ... but not `suc (suc (suc zero))`:
---three-Fin3 : Fin 3
---three-Fin3 = suc (suc (suc zero))
+-- three-Fin3 : Fin 3
+-- three-Fin3 = suc (suc (suc zero))
 
 -- (try to uncomment the above definition to see what goes wrong).
 
 -- Now that we have the Fin type, we can write a version of lookup on vectors
 -- that doesn't have Maybe in its return type. Try to do this now:
 lookup-Vec : {A : Set} {n : Nat} → Fin n → Vec A n → A
-lookup-Vec {A}{n} i xs = {!!}
+lookup-Vec {A} {.(suc _)} zero (x :: xs) = x
+lookup-Vec {A} {.(suc _)} (suc i) (x :: xs) = lookup-Vec i xs
 
 -- Notice that the type of this function guarantees that the index i will never
 -- be out of the bounds of the vector xs.
 
 -- Also write a function that sets the i-th value in a vector to a given value:
 put-Vec : {A : Set} {n : Nat} → Fin n → A → Vec A n → Vec A n
-put-Vec i a xs = {!!}
+put-Vec zero a (x :: xs) = a :: xs
+put-Vec (suc i) a (x :: xs) = x :: (put-Vec i a xs)
 
 put-Vec-test : put-Vec one-Fin3 7 example-vec ≡ 1 :: 7 :: 3 :: []
-put-Vec-test = {!!}
+put-Vec-test = refl
 
 
 
@@ -271,7 +288,7 @@ such that B x is true". For example:
 IsEven : Nat → Set
 IsEven n = Σ[ m ∈ Nat ] (2 * m ≡ n)
 4-is-even : IsEven 4
-4-is-even = {!!}
+4-is-even = 2 , refl
 
 -- The Σ-type is also a generalization of the product type, which encodes the logical operator 'and':
 _×_ : Set → Set → Set
@@ -295,7 +312,8 @@ NonZero = Σ[ n ∈ Nat ] (is-zero n ≡ false)
 -- Now we can write a function that calculates the predecessor of a nonzero
 -- natural number, without resorting to using a Maybe type:
 pred : NonZero → Nat
-pred n = {!!}
+pred (zero , ())
+pred (suc x , refl) = x
 
 
 
@@ -312,21 +330,27 @@ infix 2 _≤_
 
 -- Show that inequality is reflexive and transitive:
 refl≤ : {n : Nat} → n ≤ n
-refl≤ {n} = {!!}
+refl≤ {zero} = lz
+refl≤ {suc n} = ls (refl≤ {n})
 
 trans≤ : {l m n : Nat} → l ≤ m → m ≤ n → l ≤ n
-trans≤ {l}{m}{n} l≤m m≤n = {!!}
+trans≤ {zero} {m} {n} l≤m m≤n = lz
+trans≤ {suc l} {zero} {n} () m≤n
+trans≤ {suc l} {suc m} {zero} (ls l≤m) ()
+trans≤ {suc l} {suc m} {suc n} (ls l≤m) (ls m≤n) = ls (trans≤ l≤m m≤n)
 
 -- Now define what it means that n is less than or equal to
 -- all elements of the list xs.
 -- Use the Curry-Howard correspondence (see previous session) to
 -- encode propositions as types.
 _≤all_ : Nat → List Nat → Set
-n ≤all xs = {!!}
+n ≤all [] = ⊤
+n ≤all (x :: xs) = (n ≤ x) × (n ≤all xs)
 
 -- Prove mixed transitivity:
 trans-≤all : {m n : Nat} → {xs : List Nat} → (m ≤ n) → (n ≤all xs) → (m ≤all xs)
-trans-≤all {m}{n}{xs} m≤n n≤xs = {!!}
+trans-≤all {m} {n} {[]} m≤n n≤xs = tt
+trans-≤all {m} {n} {x :: xs} m≤n (n≤x , n≤xs) = (trans≤ m≤n n≤x) , (trans-≤all {m} {n} {xs} m≤n n≤xs)
 
 -- We use ≤all to define what it means for a list to be sorted:
 IsSorted : List Nat → Set
@@ -347,18 +371,29 @@ SortedList = Σ[ xs ∈ List Nat ] (IsSorted xs)
 -- but the following will be more practical:
 --    Hint: you will likely need a with-clause.
 compare : (m n : Nat) → (m ≤ n) ⊎ (n ≤ m)
-compare m n = {!!}
+compare zero n = left lz
+compare (suc m) zero = right lz
+compare (suc m) (suc n) with compare m n
+...                     | left  m≤n = left  (ls m≤n)
+...                     | right n≤m = right (ls n≤m)
 
 -- Define a function that inserts a number into a sorted list.
 --    Hint: you will likely need a with-clause.
 insert : (n : Nat) → (xs : SortedList) → List Nat
-insert n xs = {!!}
+insert n ([] , _)        = n :: []
+insert n ((x :: xs) , (x≤xs , sort_xs)) with compare n x
+...                                     | left n≤x  = n :: (x :: xs)
+...                                     | right _ = x :: (insert n (xs , sort_xs))
 
 -- Show that if `m ≤ n` and `m` ≤ all elements of `xs`, then `m` ≤ all elements of
 -- `insert n xs`.
 insert-≤all : {m : Nat} → (n : Nat) → m ≤ n
   → (xs : SortedList) → m ≤all proj₁ xs → m ≤all insert n xs
-insert-≤all {m} n m≤n (xs , xs-sorted) m≤xs = {!!}
+insert-≤all {m} n m≤n ([] , xs-sorted) m≤xs = m≤n , tt
+insert-≤all {m} n m≤n ((x :: xs) , (x≤xs , sort_xs)) m≤xs with compare n x
+...                                                | left n≤x  = m≤n , (trans≤ m≤n n≤x , proj₂ m≤xs)
+...                                                | right x≤n = proj₁ m≤xs , (insert-≤all {m} n m≤n (xs , sort_xs) (proj₂ m≤xs))
+
 {- Note: The proposition that you need to prove, contains a call to `insert`.
    It is then often a good idea to start with the same pattern matches and with-abstractions
    that you used in the definition of `insert`, so that the call properly reduces
@@ -373,7 +408,10 @@ insert-≤all {m} n m≤n (xs , xs-sorted) m≤xs = {!!}
 
 -- Show that `insert` preserves sortedness:
 insert-is-sorted : (n : Nat) → (xs : SortedList) → IsSorted (insert n xs)
-insert-is-sorted n (xs , xs-sorted) = {!!}
+insert-is-sorted n ([] , xs-sorted)        = tt , tt
+insert-is-sorted n ((x :: xs) , ( x≤xs , xs-sorted)) with compare n x
+...                                        | left n≤x  = ((n≤x , trans-≤all n≤x x≤xs)) , ((x≤xs , xs-sorted))
+...                                        | right x≤n = insert-≤all {x} n x≤n (xs , xs-sorted) x≤xs , insert-is-sorted n (xs , xs-sorted)
 
 -- Pairing them up:
 insert-sorted : Nat → SortedList → SortedList
@@ -381,14 +419,15 @@ insert-sorted n xs = insert n xs , insert-is-sorted n xs
 
 -- Implement a `sort` function:
 sort : List Nat → SortedList
-sort xs = {!!}
+sort []        = [] , tt
+sort (x :: xs) = insert x (sort xs) , insert-is-sorted x (sort xs)
 
 test-list : List Nat
 test-list = 3 :: 1 :: 2 :: 76 :: 34 :: 15 :: 155 :: 11 :: 1 :: []
 
 -- If your implementation is correct, you should be able to fill in refl here:
 test-sort : proj₁ (sort test-list) ≡ 1 :: 1 :: 2 :: 3 :: 11 :: 15 :: 34 :: 76 :: 155 :: []
-test-sort = {!!}
+test-sort = refl
 
 
 
@@ -404,7 +443,8 @@ The following tools might come in handy (although none of them is strictly neces
 -}
 
 ifDec_then_else_ : {A B : Set} → Dec A → B → B → B
-ifDec cond then b₁ else b₂ = {!!}
+ifDec yes p then b₁ else b₂ = b₁
+ifDec no ¬p then b₁ else b₂ = b₂
 
 -- The following is useful for inline pattern matching
 case_return_of_ : ∀ {A : Set} → (a : A) → (B : A → Set) → ((x : A) → B x) → B a
@@ -418,7 +458,8 @@ if-ifnot {A}{b}{x}{y} =
 
 -- `count n xs` counts the number of occurrences of `n` in `xs`:
 count : Nat → List Nat → Nat
-count n xs = {!!}
+count n [] = 0
+count n (x :: xs) = ifDec (equalNat? n x) then (suc (count n xs)) else count n xs
 -- You can use `equalNat?` from last session.
 
 {-
@@ -438,3 +479,20 @@ then you have to add both in a single with-clause.
 See: http://agda.readthedocs.io/en/v2.5.2/language/with-abstraction.html#simultaneous-abstraction
 -}
 
+⊥-elim : ∀ {A : Set} → ⊥ → A
+⊥-elim = λ()
+
+insert-suc : (a : Nat) (xs : List Nat) → suc (count a xs) ≡ count a (insert a (sort xs))
+insert-suc a [] with equalNat? a a
+... | yes a≡a = refl
+... | no abs = ⊥-elim (abs refl)
+
+insert-suc a (x :: xs) with equalNat? a x
+... | yes a≡x rewrite insert-suc a xs | sym a≡x = {!insert-suc a (insert a (sort xs))!}
+... | no blah = {!!}
+
+sort_is_valid : (xs : List Nat) → HaveSameContents xs (proj₁ (sort xs))
+sort [] is n valid      = refl
+sort x :: xs is n valid with equalNat? n x
+...                     | (yes n≡x) rewrite n≡x = {!sort_is_valid xs n!}
+...                     | (no  n≢x) = {!!}
